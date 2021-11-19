@@ -1,0 +1,64 @@
+On peut voir que le binaire contient un appel a /bin/sh
+
+pour y arriver il faut que les entrées de l'utilisateur se conforme
+a certaines conditions:
+
+il faut que le login fasse plus de 4 characteres, et qu'il n'en ai pas un
+en dessous de 32 ascii ("1")
+
+le login est ensuite transformé en hash et est comparé a la deuxieme
+entrée utilisateur: serial
+
+si le hash du login correspond a serial: le shell se lance.
+
+nous allons donc lancer dans gdb le programme:
+
+on met un breakpoint avant ptrace et un breakpoint apres la boucle du hash:
+
+b *0x080487b5 //ptrace
+
+b *0x08048866 //apres la boucle du hash
+
+on run le programme:
+
+(gdb) run
+The program being debugged has been started already.
+Start it from the beginning? (y or n) y
+Starting program: /home/users/level06/level06 
+***********************************
+*		level06		  *
+***********************************
+-> Enter Login: level06
+***********************************
+***** NEW ACCOUNT DETECTED ********
+***********************************
+-> Enter Serial: a // pas important
+
+Breakpoint 2, 0x080487b5 in auth ()
+
+ensuite on jump apres le call a ptrace
+
+(gdb) jump *0x080487ed
+Continuing at 0x80487ed.
+
+Breakpoint 1, 0x08048866 in auth ()
+on print la valeur du hash
+
+(gdb) p *(int*)($ebp-0x10)
+$1 = 6233721
+
+puis on quitte gdb
+
+level06@OverRide:~$ ./level06
+***********************************
+*		level06		  *
+***********************************
+-> Enter Login: level06
+***********************************
+***** NEW ACCOUNT DETECTED ********
+***********************************
+-> Enter Serial: 6233721
+Authenticated!
+$ cat /home/users/level07/.pass
+GbcPDRgsFK77LNnnuh7QyFYA2942Gp8yKj9KrWD8
+$ 
